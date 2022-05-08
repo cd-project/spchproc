@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def dtw(t, s, dist_list, warp=2):
+def dtw(t, s, dist_list, warp=1):
     """
 
     :param t array t: N1*M array
@@ -25,7 +25,7 @@ def dtw(t, s, dist_list, warp=2):
             _j = max(j - 1, 0)
             cost_list = [P[i, _j]]
             for k in range(1, warp + 1):
-                cost_list += [P[max(i - k, 0), _j]]
+                cost_list += [P[max(i - k, 0), _j], P[max(i - k, 0), j]]
 
             P[i, j] = min(cost_list) + C[i, j]
 
@@ -41,9 +41,19 @@ def tracing_path(P, warp):
     path_i.insert(0, i)
     path_j.insert(0, j)
     while i > 0 or j > 0:
-        next_index = np.argmin([P[max(i - k, 0), j - 1] for k in range(1, warp + 1)])
-        j = max(j - 1, 0)
-        i = max(i - next_index - 1, 0)
+        next_index_1 = np.argmin([P[max(i - k, 0), j - 1] for k in range(1, warp + 1)])
+        next_index_2 = np.argmin([P[max(i - k, 0), j] for k in range(1, warp + 1)])
+
+        j_1 = max(j - 1, 0)
+        i_1 = max(i - next_index_1 - 1, 0)
+
+        j_2 = j
+        i_2 = max(i - next_index_2 - 1, 0)
+        if P[i_1, j_1] <= P[i_2, j_2]:
+            i, j = i_1, j_1
+        else:
+            i, j = i_2, j_2
+
         path_i.insert(0, i)
         path_j.insert(0, j)
 

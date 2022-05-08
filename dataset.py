@@ -25,25 +25,34 @@ def normalize_mfcc_features(mfcc_features):
     return (mfcc_features - min_features) / (max_features - min_features)
 
 
-def get_dataset_df(data_dir, sr, n_mfcc, hop_length, n_fft, delta_width):
-    fids = [os.path.basename(p).split(".")[0] for p in glob.glob(os.path.join(data_dir, "*.txt"))]
+def get_dataset_df(data_dirs, sr, n_mfcc, hop_length, n_fft, delta_width):
     df = pd.DataFrame(columns=["fid", "start", "end", "label", "mfcc_features"])
-    for fid in fids:
-        # Get data from label file
-        label_file_path = os.path.join(data_dir, f"{fid}.txt")
-        dfi = pd.read_csv(label_file_path, sep="\t", header=None)
-        dfi.rename(columns={0: "start", 1: "end", 2: "label"}, inplace=True)
-        dfi["fid"] = [fid] * len(dfi)
+    for data_dir in data_dirs:
+        fids = [os.path.basename(p).split(".")[0] for p in glob.glob(os.path.join(data_dir, "*.txt"))]
+        for fid in fids:
+            # Get data from label file
+            label_file_path = os.path.join(data_dir, f"{fid}.txt")
+            dfi = pd.read_csv(label_file_path, sep="\t", header=None)
+            dfi.rename(columns={0: "start", 1: "end", 2: "label"}, inplace=True)
+            dfi["fid"] = [fid] * len(dfi)
 
-        # Create mfcc feature with each label in data frame of fid file
-        sound_file_path = os.path.join(data_dir, f"{fid}.wav")
-        sound_i, _ = librosa.load(sound_file_path, sr=sr)
-        dfi["mfcc_features"] = dfi.apply(get_mfcc_data_series_features,
-                                         args=(sound_i, sr, n_mfcc, hop_length, n_fft, delta_width), axis=1)
-        dfi["mfcc_features"] = dfi["mfcc_features"].apply(lambda x: normalize_mfcc_features(x))
+            # Create mfcc feature with each label in data frame of fid file
+            sound_file_path = os.path.join(data_dir, f"{fid}.wav")
+            sound_i, _ = librosa.load(sound_file_path, sr=sr)
+            dfi["mfcc_features"] = dfi.apply(get_mfcc_data_series_features,
+                                             args=(sound_i, sr, n_mfcc, hop_length, n_fft, delta_width), axis=1)
+            dfi["mfcc_features"] = dfi["mfcc_features"].apply(lambda x: normalize_mfcc_features(x))
 
-        df = pd.concat([df, dfi], axis=0, ignore_index=True)
-        df.drop(columns=["fid", "start", "end"], inplace=True)
+            df = pd.concat([df, dfi], axis=0, ignore_index=True)
+            df.drop(columns=["fid", "start", "end"], inplace=True)
+
+        # Remove nan data
+        remove_indexes = []
+        for i in range(len(df)):
+            if np.isnan(np.sum(df.iloc[i]["mfcc_features"])):
+                remove_indexes.append(i)
+
+        df.drop(df.index[remove_indexes], inplace=True, axis=0)
 
     return df
 

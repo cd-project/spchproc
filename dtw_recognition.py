@@ -12,15 +12,15 @@ def predict(template_df, test_mfcc_features):
         dt_list_i = []
 
         for j in range(len(template_df)):
-            mfccj = template_df.loc[j, "mfcc_features"]
-            # c_j = template_df.loc[j, "conv"]
-            # dist_list = [lambda x, y: (x - y).T.dot(np.linalg.inv(c_j[l])).dot(x - y) for l in range(len(c_j))]
+            mfccj = template_df.iloc[j]["mfcc_features"]
+            # c_j = template_df.iloc[j]["conv"]
+            # dist_list = [lambda x, y: (x - y).T.dot(np.linalg.pinv(c_j[l])).dot(x - y) for l in range(len(c_j))]
             dist_list = [lambda x, y: np.linalg.norm(x - y, ord=2)] * len(mfccj)
 
             dtj = dtw(mfccj, mfcc_test_i, dist_list)[0]
             dt_list_i.append(dtj)
 
-        preds.append(template_df.loc[np.argmin(dt_list_i), "label"])
+        preds.append(template_df.iloc[np.argmin(dt_list_i)]["label"])
 
     return preds
 
@@ -42,7 +42,7 @@ def segmental_k_means(mfcc_features, n_state):
         boundaries.append(boundary_j)
 
     while True:
-        prev_feature = copy.deepcopy(new_feature)
+        prev_features = copy.deepcopy(new_feature)
         for i in range(n_state):
             vector_list = np.zeros((1, n_mfcc))
             for j in range(n_templates):
@@ -51,15 +51,25 @@ def segmental_k_means(mfcc_features, n_state):
                 vector_list = np.concatenate((vector_list, mfcc_features[j][s:e]), axis=0)
 
             new_feature[i] = np.mean(vector_list[1:], axis=0)
-            new_cov[i] = np.cov(vector_list[1:].T)
+            if len(vector_list[1:]) <= 1:
+                new_cov[i] = np.eye(n_mfcc)
+            else:
+                new_cov[i] = np.cov(vector_list[1:].T) * (len(vector_list[1:]) - 1) / len(vector_list[1:])
+
             # Diag covariance matrix
             new_cov[i] = np.diag(np.diag(new_cov[i]))
 
-        # for j in range(n_templates):
-        #     dist_list = [lambda x, y: (x - y).T.dot(np.linalg.inv(new_cov[l])).dot(x - y) for l in range(len(n_state))]
-        #     _, path_t, path_s = dtw(new_feature, mfcc_features[j], dist_list)
+        for j in range(n_templates):
+            dist_list = [lambda x, y: (x - y).T.dot(np.linalg.pinv(new_cov[l])).dot(x - y) for l in range(n_state)]
+            _, path_t, path_s = dtw(new_feature, mfcc_features[j], dist_list)
 
-        if np.linalg.norm(new_feature - prev_feature, ord="fro") < 1e-3:
+            current_segment = 1
+            for k in range(1, len(path_s)):
+                if path_t[k] != path_t[k - 1]:
+                    boundaries[j][current_segment] = k
+                    current_segment += 1
+
+        if np.sqrt(np.linalg.norm(prev_features - new_feature, ord="fro")) < 1e-5:
             break
 
     return new_feature, new_cov
@@ -71,7 +81,7 @@ def reduce_models(template_df, syllables_file_path):
 
     new_df = pd.DataFrame(columns=list(template_df.columns) + ["conv"])
     for label in template_df["label"].unique():
-        mfcc_features = list(template_df.loc[template_df["label"] == label, "mfcc_features"])
+        mfcc_features = list(template_df[template_df["label"] == label]["mfcc_features"])
         n_state = syllable_df["n_syllables"][syllable_df["label"] == label].iloc[0]
 
         reduced_mfcc_feature, new_cov = segmental_k_means(mfcc_features, n_state)
