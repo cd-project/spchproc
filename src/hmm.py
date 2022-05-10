@@ -84,7 +84,7 @@ def train_gmm_hmm(dataset: dict, data_length: dict, syllable_file_path: str):
     # Define general config of model
     states_num = 5
     n_mix = 3
-    tmp_p = 1.0 / 3
+    tmp_p = 1.0 / n_mix
     transmat_prior = np.array([[tmp_p, tmp_p, tmp_p, 0, 0],
                                [0, tmp_p, tmp_p, tmp_p, 0],
                                [0, 0, tmp_p, tmp_p, tmp_p],
@@ -96,7 +96,7 @@ def train_gmm_hmm(dataset: dict, data_length: dict, syllable_file_path: str):
     for label in dataset.keys():
         model = GMMHMM(n_components=states_num, n_mix=n_mix,
                        transmat_prior=transmat_prior, startprob_prior=startprob_prior,
-                       covariance_type='diag', n_iter=10)
+                       covariance_type='diag', n_iter=10, random_state=42)
         train_data = dataset[label]
         length = data_length[label]
 

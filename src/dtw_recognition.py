@@ -112,9 +112,12 @@ if __name__ == '__main__':
     parser.add_argument("--train_config_file", help="Path to train config file path")
     parser.add_argument("--test_config_file", help="Path to test config file path")
 
+    output_config = None
+
     args = parser.parse_args()
     with open(args.train_config_file) as f:
         train_config = json.load(f)
+        output_config = train_config
 
     train_df = get_dataset_df(train_config["data_dir"], train_config["sr"], train_config["n_mfcc"],
                               train_config["hop_length"],
@@ -131,6 +134,7 @@ if __name__ == '__main__':
     else:
         with open(args.test_config_file) as f:
             test_config = json.load(f)
+            output_config = test_config
         test_df = get_dataset_df(test_config["data_dir"], test_config["sr"], test_config["n_mfcc"],
                                  test_config["hop_length"],
                                  test_config["n_fft"],
@@ -139,9 +143,9 @@ if __name__ == '__main__':
         test_mfcc_features = list(test_df["mfcc_features"])
         reals = test_df["label"]
 
-        labels = ['sil', '1', 'tram', '4', 'muoi', '9', 'trieu', '3', '7', '8', 'nghin', '6', '5', 'lam', '2', 'tu',
-                  '0', 'mot', 'linh', 'm1']
-        preds = predict(new_template_df, test_mfcc_features, 2)
+    labels = ['sil', '1', 'tram', '4', 'muoi', '9', 'trieu', '3', '7', '8', 'nghin', '6', '5', 'lam', '2', 'tu',
+              '0', 'mot', 'linh', 'm1']
+    preds = predict(new_template_df, test_mfcc_features, 2)
 
-        result_folder_path = "../output/result"
-        helper.save_result(preds, reals, labels, result_folder_path, test_config)
+    result_folder_path = "../output/result"
+    helper.save_result(preds, reals, labels, result_folder_path, output_config)

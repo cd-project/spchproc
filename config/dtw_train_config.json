@@ -1,4 +1,5 @@
 {
+  "config_name": "dtw_train_1",
   "data_dir": [
     "../data/train/19021396_PhamThanhVinh"
   ],
