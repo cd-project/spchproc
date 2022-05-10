@@ -1,12 +1,12 @@
 # Giới thiệu
 
-Bài tập nhận dạng từ số đơn khóa xử lý tiếng nói UET. Để thực hiện ta có thể sử dụng 2 thuật toán DTW
+Bài tập nhận dạng từ số đơn khóa xử lý tiếng nói UET. Để thực hiện ta có thể sử dụng 2 thuật toán DTW và 
 
-và HMM.
+HMM.
 
 # DTW
 
-Dynamic time warping là thuật toán với ý tưởng cơ bản là dóng hàng các đặc trưng mfcc của từng template
+Dynamic time warping là thuật toán với ý tưởng cơ bản là dóng hàng các đặc trưng mfcc của từng template 
 
 với đặc trưng mfcc tương ứng của từ đơn sử dụng để test. Template tương nào có hàm lỗi nhỏ nhất sẽ được
 
@@ -34,11 +34,11 @@ Template được lấy ra bởi một người và test trên nhiều người
 
 # GMM-HMM
 
-Sử dụng mô hình âm thanh trộn Gauss mỗi phân phối tương ứng với 1 người do có thể bao được nhiều khả năng
+Sử dụng mô hình âm thanh trộn Gauss mỗi phân phối tương ứng với 1 người do có thể bao được nhiều khả 
 
-hơn so với DTW. Bằng các khởi tạo ma trận truyển trạng thái transmat, xác suất chuyển trạng thái của trạng
+năng hơn so với DTW. Bằng các khởi tạo ma trận truyển trạng thái transmat, xác suất chuyển trạng thái 
 
-thái 1 start_prob ta có thể sử dụng thuật toán EM để huấn luyện GMMHMM.
+của trạng thái 1 start_prob ta có thể sử dụng thuật toán EM để huấn luyện GMMHMM.
 
 ## Sinh dữ liệu huấn luyện và test cho GMMHMM
 
