@@ -72,7 +72,7 @@ def run_test(config: dict):
             start_index += lengths[i]
 
     # Save result
-    result_folder_path = "./output/result"
+    result_folder_path = "../output/result"
     helper.save_result(preds, reals, labels, result_folder_path, config)
 
 

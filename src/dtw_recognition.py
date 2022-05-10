@@ -143,5 +143,5 @@ if __name__ == '__main__':
                   '0', 'mot', 'linh', 'm1']
         preds = predict(new_template_df, test_mfcc_features, 2)
 
-        result_folder_path = "./output/result"
+        result_folder_path = "../output/result"
         helper.save_result(preds, reals, labels, result_folder_path, test_config)
