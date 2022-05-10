@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def dtw(t, s, dist_list, warp=1):
+def dtw(t: np.ndarray, s: np.ndarray, dist_list: list, warp=2):
     """
 
-    :param t array t: N1*M array
-    :param s array s: N1*M array
+    :param t array t: (N1, M) array
+    :param s array s: (N1, M) array
     :param dist_list: list of distance function apply for each N dimension vector of template
     :param warp: warp scale allowed
     :return total cost and alignment paths
@@ -23,38 +23,37 @@ def dtw(t, s, dist_list, warp=1):
     for i in range(0, r + 1):
         for j in range(0, c + 1):
             _j = max(j - 1, 0)
-            cost_list = [P[i, _j]]
-            for k in range(1, warp + 1):
-                cost_list += [P[max(i - k, 0), _j], P[max(i - k, 0), j]]
+            cost_list = []
+            for k in range(0, warp + 1):
+                cost_list += [P[max(i - k, 0), _j]]
 
             P[i, j] = min(cost_list) + C[i, j]
 
-    optimal_path_t, optimal_path_s = tracing_path(P[1:, 1:], warp)
+    optimal_path_t, optimal_path_s = tracing_path(P, warp)
     return P[-1, -1], optimal_path_t, optimal_path_s
 
 
-def tracing_path(P, warp):
-    path_i = []
-    path_j = []
+def tracing_path(P: np.ndarray, warp: int):
+    """
+
+    :param cost matrix P: (n_mfcc, n_fcc) array
+    :param warping step warp: int
+    :return: optimal aligned path for template and sample: (n_state + 2, ) array, (n_frame + 2, ) array
+    """
+
+    path_t = []
+    path_s = []
 
     i, j = P.shape[0] - 1, P.shape[1] - 1
-    path_i.insert(0, i)
-    path_j.insert(0, j)
+    path_t.insert(0, i)
+    path_s.insert(0, j)
     while i > 0 or j > 0:
-        next_index_1 = np.argmin([P[max(i - k, 0), j - 1] for k in range(1, warp + 1)])
-        next_index_2 = np.argmin([P[max(i - k, 0), j] for k in range(1, warp + 1)])
+        next_index = np.argmin([P[max(i - k, 0), j - 1] for k in range(0, warp + 1)])
 
-        j_1 = max(j - 1, 0)
-        i_1 = max(i - next_index_1 - 1, 0)
+        j = max(j - 1, 0)
+        i = max(i - next_index, 0)
 
-        j_2 = j
-        i_2 = max(i - next_index_2 - 1, 0)
-        if P[i_1, j_1] <= P[i_2, j_2]:
-            i, j = i_1, j_1
-        else:
-            i, j = i_2, j_2
+        path_t.insert(0, i)
+        path_s.insert(0, j)
 
-        path_i.insert(0, i)
-        path_j.insert(0, j)
-
-    return path_i, path_j
+    return path_t, path_s

@@ -1,12 +1,30 @@
+import argparse
 import glob
+import json
 import os
+import pickle
 
 import librosa
 import numpy as np
 import pandas as pd
 
+import helper
 
-def get_mfcc_data_series_features(x, sound, sr, n_mfcc, hop_length, n_fft, delta_width):
+
+def get_mfcc_data_series_features(x: pd.Series, sound: np.ndarray, sr: int, n_mfcc: int, hop_length: int, n_fft: int,
+                                  delta_width: int):
+    """
+
+    :param a row of dataframe which contain (start, end, mfcc_features) columns x:
+    :param sound: (n_samples, ) array
+    :param sampling rate sr:
+    :param dimension of each mfcc feature vector n_mfcc:
+    :param hop_length:
+    :param n_fft:
+    :param delta_width:
+    :return:
+    """
+
     s = np.floor(x.loc["start"] * sr).astype(int)
     e = np.ceil(x.loc["end"] * sr).astype(int)
     sound = sound[s:e]
@@ -25,7 +43,18 @@ def normalize_mfcc_features(mfcc_features):
     return (mfcc_features - min_features) / (max_features - min_features)
 
 
-def get_dataset_df(data_dirs, sr, n_mfcc, hop_length, n_fft, delta_width):
+def get_dataset_df(data_dirs: list, sr: int, n_mfcc: int, hop_length: int, n_fft: int, delta_width: int):
+    """
+
+    :param list of data directories which contain sound and label file data_dirs:
+    :param sampling rate use for sampling wave form sr:
+    :param expected n_dimension of mfcc feature n_mfcc:
+    :param step between each frame use for extract mfcc feature hop_length:
+    :param n_fft:
+    :param delta_width:
+    :return:
+    """
+
     df = pd.DataFrame(columns=["fid", "start", "end", "label", "mfcc_features"])
     for data_dir in data_dirs:
         fids = [os.path.basename(p).split(".")[0] for p in glob.glob(os.path.join(data_dir, "*.txt"))]
@@ -65,3 +94,55 @@ def get_template_df(df: pd.DataFrame, n_sample_per_word: int):
             ignore_index=True)
 
     return df_template
+
+
+def get_dataset_for_hmm_from_df(df: pd.DataFrame):
+    my_data = {}
+    data_length = {}
+
+    for i in range(len(df)):
+        label = df.iloc[i]["label"]
+        features = df.iloc[i]["mfcc_features"].tolist()
+        if label not in my_data.keys():
+            data_length[label] = []
+            my_data[label] = []
+
+        data_length[label].append(len(features))
+        my_data[label] += features
+
+    return my_data, data_length
+
+
+def save_data_for_hmm(config: dict, save_folder_path):
+    helper.create_folder(save_folder_path)
+
+    df = get_dataset_df(config["data_dirs"], config["sr"], config["n_mfcc"], config["hop_length"],
+                        config["n_fft"], config["delta_width"])
+
+    dataset, data_length = get_dataset_for_hmm_from_df(df)
+
+    with open(os.path.join(save_folder_path, f'{config["config_name"]}_set'), "wb") as sf:
+        pickle.dump(dataset, sf)
+
+    with open(os.path.join(save_folder_path, f'{config["config_name"]}_length'), "wb") as sf:
+        pickle.dump(data_length, sf)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Commandline help create and saving data for GMMHMM model.")
+    parser.add_argument("--hmm_train_data_config_file", help="Path to config file of hmm training data")
+    parser.add_argument("--hmm_test_data_config_file", help="Path to config file of hmm testing data")
+
+    args = parser.parse_args()
+
+    if args.hmm_train_data_config_file:
+        save_train_data_folder = "./output/data/train_data"
+        with open(args.hmm_train_data_config_file) as f:
+            train_data_config = json.load(f)
+            save_data_for_hmm(train_data_config, save_train_data_folder)
+
+    if args.hmm_test_data_config_file:
+        save_test_data_folder = "./output/data/test_data"
+        with open(args.hmm_test_data_config_file) as f:
+            test_data_config = json.load(f)
+            save_data_for_hmm(test_data_config, save_test_data_folder)

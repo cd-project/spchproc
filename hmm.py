@@ -1,32 +1,16 @@
-import os.path
+import argparse
+import json
+import os
 import pickle
 
 import numpy as np
 import pandas as pd
 from hmmlearn.hmm import GMMHMM
-from sklearn.utils import shuffle
 
-import dataset
-
-
-def get_dataset(df):
-    my_data = {}
-    data_length = {}
-
-    for i in range(len(df)):
-        label = df.iloc[i]["label"]
-        features = df.iloc[i]["mfcc_features"].tolist()
-        if label not in my_data.keys():
-            data_length[label] = []
-            my_data[label] = []
-
-        data_length[label].append(len(features))
-        my_data[label] += features
-
-    return my_data, data_length
+import helper
 
 
-def load_dataset(data_file_path, data_length_path):
+def load_dataset(data_file_path: str, data_length_path: str):
     features, data_length = None, None
     with open(data_file_path, "rb") as sf:
         features = pickle.load(sf)
@@ -37,7 +21,7 @@ def load_dataset(data_file_path, data_length_path):
     return features, data_length
 
 
-def load_model_dict(model_dict_path):
+def load_model_dict(model_dict_path: str):
     model_dict = None
     with open(model_dict_path, "rb") as mf:
         model_dict = pickle.load(mf)
@@ -45,52 +29,33 @@ def load_model_dict(model_dict_path):
     return model_dict
 
 
-def create_train_test_data(config):
-    df = dataset.get_dataset_df(config["data_dirs"], config["sr"], config["n_mfcc"], config["hop_length"],
-                                config["n_fft"], config["delta_width"])
-
-    df = shuffle(df)
-    train_size = int(config["split_point"] * len(df))
-    train_df = df.iloc[:train_size]
-    test_df = df.iloc[train_size:]
-
-    testset, test_length = get_dataset(test_df)
-    trainset, train_length = get_dataset(train_df)
-
-    with open(os.path.join(config["save_data_dir"], config["save_train_data_file"]), "wb") as sf:
-        pickle.dump(trainset, sf)
-
-    with open(os.path.join(config["save_data_dir"], config["save_train_length_file"]), "wb") as sf:
-        pickle.dump(train_length, sf)
-
-    with open(os.path.join(config["save_data_dir"], config["save_test_data_file"]), "wb") as sf:
-        pickle.dump(testset, sf)
-
-    with open(os.path.join(config["save_data_dir"], config["save_test_length_file"]), "wb") as sf:
-        pickle.dump(test_length, sf)
-
-
-def run_train(config):
+def run_train(config: dict):
     trainset, train_length = load_dataset(
-        os.path.join(config["input_data_dir"], config["input_train_data_file"]),
-        os.path.join(config["input_data_dir"], config["input_train_length_file"])
+        config["input_train_data_file"],
+        config["input_train_length_file"]
     )
 
     gmm_hmm_models = train_gmm_hmm(trainset, train_length, config["syllable_file_path"])
-    with open(os.path.join(config["save_model_dir"], config["save_model_dict_file"]), "wb") as mf:
+
+    # Save trained model
+    model_folder_path = "./output/model"
+    helper.create_folder(model_folder_path)
+    with open(os.path.join(model_folder_path, f'{config["config_name"]}.pkl'), "wb") as mf:
         pickle.dump(gmm_hmm_models, mf)
 
 
-def run_test(config):
+def run_test(config: dict):
     testset, test_length = load_dataset(
-        os.path.join(config["input_data_dir"], config["input_test_data_file"]),
-        os.path.join(config["input_data_dir"], config["input_test_length_file"])
+        config["input_test_data_file"],
+        config["input_test_length_file"]
     )
 
-    gmm_hmm_models = load_model_dict(os.path.join(config["input_model_dir"], config["input_model_dict_file"]))
+    gmm_hmm_models = load_model_dict(config["input_model_dict_file"])
 
     preds = []
     reals = []
+    labels = ['sil', '1', 'tram', '4', 'muoi', '9', 'trieu', '3', '7', '8', 'nghin', '6', '5', 'lam', '2', 'tu',
+              '0', 'mot', 'linh', 'm1']
 
     for label in testset.keys():
         features = testset[label]
@@ -106,10 +71,12 @@ def run_test(config):
             reals.append(label)
             start_index += lengths[i]
 
-    print(np.sum(np.array(preds) == np.array(reals)) / len(preds))
+    # Save result
+    result_folder_path = "./output/result"
+    helper.save_result(preds, reals, labels, result_folder_path, config)
 
 
-def train_gmm_hmm(dataset, data_length, syllable_file_path):
+def train_gmm_hmm(dataset: dict, data_length: dict, syllable_file_path: str):
     syllable_df = pd.read_csv(syllable_file_path, sep="\t", header=None)
     syllable_df.rename(columns={0: "label", 1: "n_syllables"}, inplace=True)
     gmm_hmm_models = {}
@@ -117,7 +84,7 @@ def train_gmm_hmm(dataset, data_length, syllable_file_path):
     # Define general config of model
     states_num = 5
     n_mix = 3
-    tmp_p = 1.0 / (states_num - 2)
+    tmp_p = 1.0 / 3
     transmat_prior = np.array([[tmp_p, tmp_p, tmp_p, 0, 0],
                                [0, tmp_p, tmp_p, tmp_p, 0],
                                [0, 0, tmp_p, tmp_p, tmp_p],
@@ -130,57 +97,28 @@ def train_gmm_hmm(dataset, data_length, syllable_file_path):
         model = GMMHMM(n_components=states_num, n_mix=n_mix,
                        transmat_prior=transmat_prior, startprob_prior=startprob_prior,
                        covariance_type='diag', n_iter=10)
-        trainData = dataset[label]
+        train_data = dataset[label]
         length = data_length[label]
 
-        model.fit(trainData, lengths=length)  # get optimal parameters
+        model.fit(train_data, lengths=length)  # get optimal parameters
         gmm_hmm_models[label] = model
 
     return gmm_hmm_models
 
 
 if __name__ == '__main__':
-    data_config = {
-        "data_dirs": [
-            "./data/05/19021396_PhamThanhVinh",
-            "./data/05/19021372_BuiVanToan",
-            "./data/05/19021381_NguyenVanTu",
-            "../data/05/19021384_NguyenManhTuan"
-        ],
+    parser = argparse.ArgumentParser(description="Commandline Gaussian mixture for HMM acoustic model.")
+    parser.add_argument("--train_config_file", help="Path to training config file")
+    parser.add_argument("--test_config_file", help="Path to testing config file")
 
-        "save_data_dir": "./output/data",
-        "save_train_data_file": "trainset-5:8:2022:22:57",
-        "save_train_length_file": "train_length-5:8:2022:22:57",
-        "save_test_data_file": "testset-5:8:2022:22:57",
-        "save_test_length_file": "test_length-5:8:2022:22:57",
+    args = parser.parse_args()
 
-        "sr": 22050,
-        "n_mfcc": 13,
-        "hop_length": 256,
-        "n_fft": 512,
-        "delta_width": 5,
-        "n_sample_per_word": 3,
-        "split_point": 0.9
-    }
-    train_config = {
-        "syllable_file_path": "./data/syllables.csv",
+    if args.train_config_file:
+        with open(args.train_config_file) as f:
+            run_train_config = json.load(f)
+            run_train(run_train_config)
 
-        "input_data_dir": "./output/data",
-        "input_train_data_file": "trainset-5:8:2022:22:57",
-        "input_train_length_file": "train_length-5:8:2022:22:57",
-
-        "save_model_dir": "./output/model",
-        "save_model_dict_file": "model_dict-5:8:2022:22:57.pkl",
-    }
-    test_config = {
-        "input_data_dir": "./output/data",
-        "input_test_data_file": "testset-5:8:2022:22:57",
-        "input_test_length_file": "test_length-5:8:2022:22:57",
-
-        "input_model_dir": "./output/model",
-        "input_model_dict_file": "model_dict-5:8:2022:22:57.pkl"
-    }
-
-    create_train_test_data(data_config)
-    run_train(train_config)
-    run_test(test_config)
+    if args.test_config_file:
+        with open(args.test_config_file) as f:
+            run_test_config = json.load(f)
+            run_test(run_test_config)
