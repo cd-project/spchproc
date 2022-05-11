@@ -1,0 +1,13 @@
+{
+  "config_name": "dtw_train_1",
+  "data_dir": [
+    "../data/train/19021229_DangTrungCuong"
+  ],
+  "syllables_file_path": "../data/syllables.csv",
+  "sr": 22050,
+  "n_mfcc": 13,
+  "hop_length": 256,
+  "n_fft": 512,
+  "delta_width": 5,
+  "n_sample_per_word": 3
+}
