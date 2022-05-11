@@ -1,0 +1,11 @@
+{
+  "config_name": "dtw_test1",
+  "data_dir": [
+    "../data/test"
+  ],
+  "sr": 22050,
+  "n_mfcc": 13,
+  "hop_length": 256,
+  "n_fft": 512,
+  "delta_width": 5
+}
