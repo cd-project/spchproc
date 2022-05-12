@@ -1,5 +1,5 @@
 {
-  "config_name": "hmm_test1_data",
+  "config_name": "hmm_test_data",
   "data_dirs": [
     "../data/test"
   ],

@@ -1,0 +1,13 @@
+{
+  "config_name": "dtw",
+  "data_dir": [
+    "/home/deeteecee/deeteecee/python/Speech-Processing/data/train/19021229_DangTrungCuong"
+  ],
+  "labelconf_path": "/home/deeteecee/deeteecee/python/Speech-Processing/data/labelconf.csv",
+  "sr": 22050,
+  "n_mfcc": 13,
+  "hop_length": 256,
+  "n_fft": 512,
+  "delta_width": 5,
+  "wsa_num": 1
+}
