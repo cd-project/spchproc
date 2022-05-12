@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from hmmlearn.hmm import GMMHMM
 
-import helper
+import utils
 
 
 def load_dataset(data_file_path: str, data_length_path: str):
@@ -39,7 +39,7 @@ def run_train(config: dict):
 
     # Save trained model
     model_folder_path = "./output/model"
-    helper.create_folder(model_folder_path)
+    utils.create_folder(model_folder_path)
     with open(os.path.join(model_folder_path, f'{config["config_name"]}.pkl'), "wb") as mf:
         pickle.dump(gmm_hmm_models, mf)
 
@@ -73,7 +73,7 @@ def run_test(config: dict):
 
     # Save result
     result_folder_path = "../output/result"
-    helper.save_result(preds, reals, labels, result_folder_path, config)
+    utils.save_result(preds, reals, labels, result_folder_path, config)
 
 
 def train_gmm_hmm(dataset: dict, data_length: dict, syllable_file_path: str):

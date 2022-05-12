@@ -1,26 +1,16 @@
 import copy
 
-from dataset import *
+from mfcc import *
 from dtw import dtw
 
 
 def predict(template_df: pd.DataFrame, test_mfcc_features: list, warp):
-    """
-
-    :param list of available templates use for comparing with  template_df: (label, mfcc_features) columns
-    :param mfcc features corresponding words test_mfcc_features: (label, mfcc_features) columns
-    :param allowed warping step warp:
-    :return: list of label presenting word for each testing input mfcc features
-    """
-
     preds = []
     for mfcc_test_i in test_mfcc_features:
         dt_list_i = []
 
         for j in range(len(template_df)):
             mfccj = template_df.iloc[j]["mfcc_features"]
-            c_j = template_df.iloc[j]["conv"]
-            # dist_list = [lambda x, y: (x - y).T.dot(np.linalg.pinv(c_j[l])).dot(x - y) for l in range(len(mfccj))]
             dist_list = [lambda x, y: np.linalg.norm(x - y, ord=2)] * len(mfccj)
 
             dtj, _, _ = dtw(mfccj, mfcc_test_i, dist_list, warp=warp)
@@ -31,13 +21,7 @@ def predict(template_df: pd.DataFrame, test_mfcc_features: list, warp):
     return preds
 
 
-def segmental_k_means(mfcc_features: list, n_state: int):
-    """
-
-    :param mfcc_feature of multi template which present the same word mfcc_features: (n_template, n_frame, n_mfcc) array
-    :param expected number of segment of corresponding label n_state: int
-    :return: new mfcc feature: (n_state, n_mfcc) array
-    """
+def k_means(mfcc_features: list, n_state: int):
 
     n_templates, n_mfcc = len(mfcc_features), mfcc_features[0].shape[1]
     new_feature = np.zeros((n_state, n_mfcc))
@@ -85,32 +69,25 @@ def segmental_k_means(mfcc_features: list, n_state: int):
     return new_feature, new_cov
 
 
-def reduce_models(template_df: pd.DataFrame, syllables_file_path: str):
-    """
-
-    :param template data frame of consist of mfcc_features of all word in dictionary template_df: (label, mfcc_features) columns
-    :param path to predefined syllables for each word in dictionary syllables_file_path: str
-    :return: new dataframe with reduced mfcc features: (label, new_mfcc_feature) columns
-    """
-
-    syllable_df = pd.read_csv(syllables_file_path, sep="\t", header=None)
+def minimize_mfcc(template_df: pd.DataFrame, labelconf_path: str):
+    syllable_df = pd.read_csv(labelconf_path, sep="\t", header=None)
+    print(syllable_df.columns)
     syllable_df.rename(columns={0: "label", 1: "n_syllables"}, inplace=True)
-
+    
     new_df = pd.DataFrame(columns=list(template_df.columns) + ["conv"])
-    for label in template_df["label"].unique():
+    for label in template_df["label"].unique(): 
         mfcc_features = list(template_df[template_df["label"] == label]["mfcc_features"])
-        n_state = syllable_df["n_syllables"][syllable_df["label"] == label].iloc[0]
+        # n_state = syllable_df["n_syllables"][syllable_df["label"] == label].iloc[0]
 
-        reduced_mfcc_feature, new_cov = segmental_k_means(mfcc_features, n_state)
+        reduced_mfcc_feature, new_cov = k_means(mfcc_features, 1)
         new_df.loc[len(new_df)] = [label, reduced_mfcc_feature, new_cov]
 
     return new_df
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Commandline for DTW recognition.")
-    parser.add_argument("--train_config_file", help="Path to train config file path")
-    parser.add_argument("--test_config_file", help="Path to test config file path")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-conf")
 
     output_config = None
 
@@ -124,8 +101,8 @@ if __name__ == '__main__':
                               train_config["n_fft"],
                               train_config["delta_width"])
 
-    template_df = get_template_df(train_df, train_config["n_sample_per_word"])
-    new_template_df = reduce_models(template_df, train_config["syllables_file_path"])
+    template_df = get_template_df(train_df, train_config["wsa_num"])
+    new_template_df = minimize_mfcc(template_df, train_config["labelconf_path"])
 
     if not args.test_config_file:
         choice_indexes = np.random.choice(len(train_df), 100, replace=False)
@@ -143,9 +120,8 @@ if __name__ == '__main__':
         test_mfcc_features = list(test_df["mfcc_features"])
         reals = test_df["label"]
 
-    labels = ['sil', '1', 'tram', '4', 'muoi', '9', 'trieu', '3', '7', '8', 'nghin', '6', '5', 'lam', '2', 'tu',
-              '0', 'mot', 'linh', 'm1']
+    labels = ['sil','trai', 'phai', 'len', 'xuong', 'nhay', 'ban', 'A', 'B']
     preds = predict(new_template_df, test_mfcc_features, 2)
 
     result_folder_path = "../output/result"
-    helper.save_result(preds, reals, labels, result_folder_path, output_config)
+    utils.save_result(preds, reals, labels, result_folder_path, output_config)

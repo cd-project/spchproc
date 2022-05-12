@@ -8,7 +8,7 @@ import librosa
 import numpy as np
 import pandas as pd
 
-import helper
+import utils
 
 
 def get_mfcc_data_series_features(x: pd.Series, sound: np.ndarray, sr: int, n_mfcc: int, hop_length: int, n_fft: int,
@@ -31,8 +31,8 @@ def get_mfcc_data_series_features(x: pd.Series, sound: np.ndarray, sr: int, n_mf
 
     # Generate mfcc features (mfcc and 2 derivation)
     mfcc = librosa.feature.mfcc(y=sound, sr=sr, n_mfcc=n_mfcc, hop_length=hop_length, n_fft=n_fft)
-    delta_mfcc = librosa.feature.delta(mfcc, width=delta_width)
-    delta2_mfcc = librosa.feature.delta(mfcc, order=2, width=delta_width)
+    delta_mfcc = librosa.feature.delta(mfcc, width=delta_width, mode="nearest")
+    delta2_mfcc = librosa.feature.delta(mfcc, order=2, width=delta_width, mode="nearest")
 
     return np.concatenate((mfcc, delta_mfcc, delta2_mfcc)).T
 
@@ -58,7 +58,9 @@ def get_dataset_df(data_dirs: list, sr: int, n_mfcc: int, hop_length: int, n_fft
     df = pd.DataFrame(columns=["fid", "start", "end", "label", "mfcc_features"])
     for data_dir in data_dirs:
         fids = [os.path.basename(p).split(".")[0] for p in glob.glob(os.path.join(data_dir, "*.txt"))]
+        
         for fid in fids:
+            print(fid)
             # Get data from label file
             label_file_path = os.path.join(data_dir, f"{fid}.txt")
             dfi = pd.read_csv(label_file_path, sep="\t", header=None)
@@ -82,15 +84,15 @@ def get_dataset_df(data_dirs: list, sr: int, n_mfcc: int, hop_length: int, n_fft
                 remove_indexes.append(i)
 
         df.drop(df.index[remove_indexes], inplace=True, axis=0)
-
+    # print("ok")
     return df
 
 
-def get_template_df(df: pd.DataFrame, n_sample_per_word: int):
+def get_template_df(df: pd.DataFrame, wsa_num: int):
     df_template = pd.DataFrame(columns=df.columns)
     for label in df["label"].unique():
         df_template = pd.concat(
-            [df_template, df[df["label"] == label].sample(n=n_sample_per_word, replace=False, random_state=42)], axis=0,
+            [df_template, df[df["label"] == label].sample(n=wsa_num, replace=False, random_state=42)], axis=0,
             ignore_index=True)
 
     return df_template
@@ -114,7 +116,7 @@ def get_dataset_for_hmm_from_df(df: pd.DataFrame):
 
 
 def save_data_for_hmm(config: dict, save_folder_path):
-    helper.create_folder(save_folder_path)
+    utils.create_folder(save_folder_path)
 
     df = get_dataset_df(config["data_dirs"], config["sr"], config["n_mfcc"], config["hop_length"],
                         config["n_fft"], config["delta_width"])
