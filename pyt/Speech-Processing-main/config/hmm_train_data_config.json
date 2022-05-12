@@ -1,0 +1,11 @@
+{
+  "config_name": "hmm_train1_data",
+  "data_dirs": [
+    "../data/train/19021229_DangTrungCuong"
+  ],
+  "sr": 22050,
+  "n_mfcc": 13,
+  "hop_length": 256,
+  "n_fft": 512,
+  "delta_width": 5
+}
