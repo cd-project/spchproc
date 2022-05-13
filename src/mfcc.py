@@ -131,20 +131,20 @@ def save_data_for_hmm(config: dict, save_folder_path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Commandline help create and saving data for GMMHMM model.")
-    parser.add_argument("--hmm_train_data_config_file", help="Path to config file of hmm training data")
-    parser.add_argument("--hmm_test_data_config_file", help="Path to config file of hmm testing data")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hmm_train_create", help="Path to config file of hmm training data")
+    parser.add_argument("--hmm_test_create", help="Path to config file of hmm testing data")
 
     args = parser.parse_args()
 
-    if args.hmm_train_data_config_file:
+    if args.hmm_train_create:
         save_train_data_folder = "../output/data/train_data"
-        with open(args.hmm_train_data_config_file) as f:
+        with open(args.hmm_train_create) as f:
             train_data_config = json.load(f)
             save_data_for_hmm(train_data_config, save_train_data_folder)
 
-    if args.hmm_test_data_config_file:
+    if args.hmm_test_create:
         save_test_data_folder = "../output/data/test_data"
-        with open(args.hmm_test_data_config_file) as f:
+        with open(args.hmm_test_create) as f:
             test_data_config = json.load(f)
             save_data_for_hmm(test_data_config, save_test_data_folder)
