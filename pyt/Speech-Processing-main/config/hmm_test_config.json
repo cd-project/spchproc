@@ -1,6 +1,0 @@
-{
-  "config_name": "hmm_test1",
-  "input_test_data_file": "../output/hmm_test1_data_set",
-  "input_test_length_file": "../output/hmm_test1_data_length",
-  "input_model_dict_file": "../output/model/hmm_train.pkl"
-}

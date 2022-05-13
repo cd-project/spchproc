@@ -1,6 +1,0 @@
-{
-        "config_name": "hmm_train1",
-        "syllable_file_path": "../data/syllables.csv",
-        "input_train_data_file": "../output/data/train_data/trainset-5:10:2022:14:12",
-        "input_train_length_file": "../output/data/train_data/train_length-5:10:2022:14:12"
-}

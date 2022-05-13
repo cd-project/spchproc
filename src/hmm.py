@@ -31,11 +31,11 @@ def load_model_dict(model_dict_path: str):
 
 def run_train(config: dict):
     trainset, train_length = load_dataset(
-        config["input_train_data_file"],
-        config["input_train_length_file"]
+        config["inp_data_path"],
+        config["inp_length_path"]
     )
 
-    gmm_hmm_models = train_gmm_hmm(trainset, train_length, config["syllable_file_path"])
+    gmm_hmm_models = train_gmm_hmm(trainset, train_length, config["cfg_path"])
 
     # Save trained model
     model_folder_path = "./output/model"
@@ -46,16 +46,15 @@ def run_train(config: dict):
 
 def run_test(config: dict):
     testset, test_length = load_dataset(
-        config["input_test_data_file"],
-        config["input_test_length_file"]
+        config["inp_data_path"],
+        config["inp_length_path"]
     )
 
     gmm_hmm_models = load_model_dict(config["input_model_dict_file"])
 
     preds = []
     reals = []
-    labels = ['sil', '1', 'tram', '4', 'muoi', '9', 'trieu', '3', '7', '8', 'nghin', '6', '5', 'lam', '2', 'tu',
-              '0', 'mot', 'linh', 'm1']
+    labels = ['sil','trai', 'phai', 'len', 'xuong', 'nhay', 'ban', 'A', 'B']
 
     for label in testset.keys():
         features = testset[label]
@@ -76,8 +75,8 @@ def run_test(config: dict):
     utils.save_result(preds, reals, labels, result_folder_path, config)
 
 
-def train_gmm_hmm(dataset: dict, data_length: dict, syllable_file_path: str):
-    syllable_df = pd.read_csv(syllable_file_path, sep="\t", header=None)
+def train_gmm_hmm(dataset: dict, data_length: dict, cfg_path: str):
+    syllable_df = pd.read_csv(cfg_path, sep="\t", header=None)
     syllable_df.rename(columns={0: "label", 1: "n_syllables"}, inplace=True)
     gmm_hmm_models = {}
 
@@ -107,18 +106,18 @@ def train_gmm_hmm(dataset: dict, data_length: dict, syllable_file_path: str):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Commandline Gaussian mixture for HMM acoustic model.")
-    parser.add_argument("--train_config_file", help="Path to training config file")
-    parser.add_argument("--test_config_file", help="Path to testing config file")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train_cfg_path")
+    parser.add_argument("--test_cfg_path")
 
     args = parser.parse_args()
 
-    if args.train_config_file:
-        with open(args.train_config_file) as f:
+    if args.train_cfg_path:
+        with open(args.train_cfg_path) as f:
             run_train_config = json.load(f)
             run_train(run_train_config)
 
-    if args.test_config_file:
-        with open(args.test_config_file) as f:
+    if args.test_cfg_path:
+        with open(args.test_cfg_path) as f:
             run_test_config = json.load(f)
             run_test(run_test_config)

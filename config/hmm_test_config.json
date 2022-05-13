@@ -1,6 +1,6 @@
 {
   "config_name": "hmm_test",
-  "input_test_data_file": "../output/data/test_data/hmm_test1_data_set",
-  "input_test_length_file": "../output/data/test_data/hmm_test1_data_length",
-  "input_model_dict_file": "../output/model/hmm_train1.pkl"
+  "inp_data_path": "/home/deeteecee/deeteecee/python/Speech-Processing/output/data/test_data/hmm_test_data_set",
+  "inp_length_path": "/home/deeteecee/deeteecee/python/Speech-Processing/output/data/test_data/hmm_test_data_length",
+  "input_model_dict_file": "/home/deeteecee/deeteecee/python/Speech-Processing/output/model/hmm_train.pkl"
 }

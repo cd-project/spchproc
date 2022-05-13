@@ -1,6 +1,7 @@
 {
         "config_name": "hmm_train",
-        "syllable_file_path": "/home/deeteecee/deeteecee/python/Speech-Processing/data/labelconf.csv",
-        "input_train_data_file": "../output/data/train_data/trainset-5:10:2022:14:12",
-        "input_train_length_file": "../output/data/train_data/train_length-5:10:2022:14:12"
+        "cfg_path": "/home/deeteecee/deeteecee/python/Speech-Processing/data/labelconf.csv",
+        "inp_data_path": "/home/deeteecee/deeteecee/python/Speech-Processing/output/data/train_data/hmm_train_data_set",
+        "inp_length_path": "/home/deeteecee/deeteecee/python/Speech-Processing/output/data/train_data/hmm_train_data_length"
 }
+
